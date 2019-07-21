@@ -10,7 +10,10 @@ var kOrientationChangedEvent = "OrientationController:OrientationChangedEvent";
 
 var OrientationController = Class.create({
     initialize: function() {
-        if (gDevice == kDeviceMobile) {
+        var platform = navigator.platform;
+
+        // observe orientationchange event
+        if (platform === "iPad" || platform === "iPhone" || platform === "iPod") {
             Event.observe(window, "orientationchange", this.handleDeviceOrientationChangeEvent.bind(this));
             this.handleDeviceOrientationChangeEvent();
         }
@@ -22,10 +25,10 @@ var OrientationController = Class.create({
         var orientationInDegrees = window.orientation;
         var newOrientation = kOrientationUnknown;
 
-        if ((orientationInDegrees === 0) || (orientationInDegrees === 180)) {
-            newOrientation = kOrientationPortrait;
-        } else {
+        if ((orientationInDegrees === 90) || (orientationInDegrees === -90)) {
             newOrientation = kOrientationLandscape;
+        } else {
+            newOrientation = kOrientationPortrait;
         }
         this.changeOrientation(newOrientation);
     },

@@ -52,6 +52,9 @@ var KNWebGLParticleSystem = Class.create({
         this.particlesWide = particleSystemSize.width;
         this.particlesHigh = particleSystemSize.height;
 
+        // array to store individual particle visibility within the particle system
+        this.particleSystemVisibilities = [];
+
         // set to true by default
         this.shouldDraw = true;
 
@@ -131,6 +134,7 @@ var KNWebGLParticleSystem = Class.create({
 
                 var pixelParticleRect = particleRect;
 
+                var visible = true;
                 if (this.pixels) {
                     var bytesPerRow = texWidth * 4;
 
@@ -175,13 +179,17 @@ var KNWebGLParticleSystem = Class.create({
                                     // only care about alpha
                                     var a = pixels[index + 3] / 255;
 
-                                    addingColor.a += a;
+                                    addingColor.w += a;
                                 }
                             }
                         }
                     }
 
-                    if (attribs["Color"] !== undefined ) {
+                    // set visibility for the particle
+                    visible = addingColor.w > 0;
+                    this.particleSystemVisibilities.push(visible);
+
+                    if (attribs["Color"] !== undefined) {
                         // set the color
                         if (attenuationCounter == 0) {
                             // If we never saw any pixels, we're just copying all zeroes into color
@@ -1191,6 +1199,11 @@ var KNWebGLBuildShimmerParticleSystem = Class.create(KNWebGLBuildShimmerSystem, 
             );
 
             var vertRect = TSDRectWithPoints(vertMin, vertMax);
+
+            // set vertRect to empty if the particle from the object system is not visible
+            if (this.objectSystem.particleSystemVisibilities[i] === false) {
+                vertRect = TSDRectWithPoints(WebGraphics.makePoint(0, 0), WebGraphics.makePoint(0, 0));
+            }
 
             var center = WebGraphics.makePoint(
                 this.attributeBuffers["Center"][oldVertIndex * 2],

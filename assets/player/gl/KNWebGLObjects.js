@@ -3,7 +3,7 @@
  * Keynote HTML Player
  *
  * Created by Tungwei Cheng
- * Copyright (c) 2016-2018 Apple Inc. All rights reserved.
+ * Copyright (c) 2016-2019 Apple Inc. All rights reserved.
  */
 
 var kShaderUniformGravity = "Gravity";
@@ -52,6 +52,9 @@ var KNWebGLRenderer = Class.create({
 
         // create default project matrix
         this.initMVPMatrix();
+
+        // initialize core animation wrapper
+        this.coreAnimationWrapper = new KNWebGLCoreAnimationWrapper(gl);
     },
 
     initMVPMatrix: function() {
@@ -74,19 +77,27 @@ var KNWebGLRenderer = Class.create({
 
     setupTexture: function(effect) {
         var textures = [];
-        this.textureInfoFromEffect(effect.kpfLayer, {"pointX": 0, "pointY": 0}, textures);
+        this.textureInfoFromEffect(effect.kpfLayer, effect.name, {"pointX": 0, "pointY": 0}, effect.baseLayer.initialState.opacity, textures);
 
         for (var i = 0, length = textures.length; i < length; i++) {
             var textureId = textures[i].textureId;
             var image = this.textureAssets[textureId];
 
             textures[i].texture = KNWebGLUtil.createTexture(this.gl, image);
+
+            var toTextureId = textures[i].toTextureId;
+
+            if (toTextureId) {
+                var toTextureImage = this.textureAssets[toTextureId];
+
+                textures[i].toTexture = KNWebGLUtil.createTexture(this.gl, toTextureImage);
+            }
         }
 
         return textures;
     },
 
-    textureInfoFromEffect: function(kpfLayer, offset, textures) {
+    textureInfoFromEffect: function(kpfLayer, name, offset, parentOpacity, textures) {
         var textureInfo = {};
 
         textureInfo.offset = {
@@ -94,13 +105,41 @@ var KNWebGLRenderer = Class.create({
             "pointY": offset.pointY + kpfLayer.bounds.offset.pointY
         };
 
+        textureInfo.parentOpacity = parentOpacity * kpfLayer.initialState.opacity;
+
         if (kpfLayer.textureId) {
             textureInfo.textureId = kpfLayer.textureId;
             textureInfo.width = kpfLayer.bounds.width;
             textureInfo.height = kpfLayer.bounds.height;
             textureInfo.initialState = kpfLayer.initialState;
-            textureInfo.animations = kpfLayer.animations;
             textureInfo.hasHighlightedBulletAnimation = kpfLayer.hasHighlightedBulletAnimation;
+            textureInfo.texturedRectangle = kpfLayer.texturedRectangle;
+
+            // search the animations within group for contents animation
+            var groupAnimations = kpfLayer.animations;
+
+            if (groupAnimations && groupAnimations.length > 0) {
+                var groupAnimation = groupAnimations[0];
+
+                if (groupAnimation.property === "contents") {
+                    textureInfo.toTextureId = groupAnimation.to.texture;
+                } else if (!groupAnimation.property) {
+                    var animations = groupAnimation.animations;
+
+                    if (animations) {
+                        for (var i = 0, length = animations.length; i < length; i++) {
+                            var animation = animations[i];
+
+                            if (animation.property === "contents") {
+                                textureInfo.toTextureId = animation.to.texture;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            textureInfo.animations = groupAnimations;
 
             textureInfo.textureRect = {
                 origin: {
@@ -116,7 +155,7 @@ var KNWebGLRenderer = Class.create({
             textures.push(textureInfo);
         } else {
             for (var i = 0, length = kpfLayer.layers.length; i < length; i++) {
-                this.textureInfoFromEffect(kpfLayer.layers[i], textureInfo.offset, textures);
+                this.textureInfoFromEffect(kpfLayer.layers[i], name, textureInfo.offset, textureInfo.parentOpacity, textures);
             }
         }
     },
@@ -150,6 +189,18 @@ var KNWebGLRenderer = Class.create({
 
                 case "com.apple.iWork.Keynote.KLNConfetti":
                     program = new KNWebGLTransitionConfetti(this, params);
+                    break;
+
+                case "apple:magic-move-implied-motion-path":
+                    program = new KNWebGLTransitionMagicMove(this, params);
+                    break;
+
+                case "apple:ca-text-shimmer":
+                    program = new KNWebGLTransitionShimmer(this, params);
+                    break;
+
+                case "apple:ca-text-sparkle":
+                    program = new KNWebGLTransitionSparkle(this, params);
                     break;
 
                 default:
@@ -1134,7 +1185,7 @@ var KNWebGLBuildIris = Class.create(KNWebGLProgram, {
                 if (this.isCompleted) {
                     if (!buildOut) {
                         // if completed, just draw its texture object for better performance
-                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;;
+                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                         this.drawableObjects[i].drawFrame();
                     }
                     continue;
@@ -2088,7 +2139,7 @@ var KNWebGLBuildAnvil = Class.create(KNWebGLProgram, {
             } else if (textureInfo.animations.length > 0) {
                 if (this.isCompleted) {
                     // if completed, just draw its texture object for better performance
-                    this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;;
+                    this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                     this.drawableObjects[i].drawFrame();
                     continue;
                 }
@@ -2400,7 +2451,7 @@ var KNWebGLBuildFlame = Class.create(KNWebGLProgram, {
                 if (this.isCompleted) {
                     if (!buildOut) {
                         // if completed, just draw its texture object for better performance
-                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;;
+                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                         this.drawableObjects[i].drawFrame();
                     }
                     continue;
@@ -2776,7 +2827,7 @@ var KNWebGLBuildConfetti = Class.create(KNWebGLProgram, {
                 if (this.isCompleted) {
                     if (buildIn) {
                         // if completed, just draw its texture object for better performance
-                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;;
+                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                         this.drawableObjects[i].drawFrame();
                     }
                     continue;
@@ -4020,6 +4071,8 @@ var KNWebGLBuildSparkle = Class.create(KNWebGLProgram, {
 
         this.percentfinished = percentfinished;
 
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
         for (var i = 0, length = this.textures.length; i < length; i++) {
             var textureInfo = this.textures[i];
             var initialState = textureInfo.initialState;
@@ -4037,8 +4090,6 @@ var KNWebGLBuildSparkle = Class.create(KNWebGLProgram, {
                         opacity = textureInfo.initialState.opacity;
                     }
 
-                    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
                     this.drawableObjects[i].Opacity = this.parentOpacity * opacity;
                     this.drawableObjects[i].drawFrame();
                 }
@@ -4046,7 +4097,7 @@ var KNWebGLBuildSparkle = Class.create(KNWebGLProgram, {
                 if (this.isCompleted) {
                     if (buildIn) {
                         // if completed, just draw its texture object for better performance
-                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;;
+                        this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                         this.drawableObjects[i].drawFrame();
                     }
                     continue;
@@ -4057,8 +4108,6 @@ var KNWebGLBuildSparkle = Class.create(KNWebGLProgram, {
                 sparkleEffect.renderEffectAtPercent(this.percentfinished);
             } else {
                 if (!textureInfo.initialState.hidden) {
-                    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
                     this.drawableObjects[i].Opacity = this.parentOpacity * textureInfo.initialState.opacity;
                     this.drawableObjects[i].drawFrame();
                 }
@@ -4139,7 +4188,7 @@ var KNWebGLBuildSparkleEffect = Class.create({
 
         // Set up sparkle particle system
         this.sparkleSystem = this.sparkleSystemForTR(this._texture, this._slideRect, this._duration);
-        this.sparkleSystem.setMVPMatrix(this.baseTransform);
+        this.sparkleSystem.setMVPMatrix(baseTransform);
         this.sparkleSystem.setColor(new Float32Array([1, 1, 1, 1]));
 
         this._isSetup = true;
@@ -4268,7 +4317,245 @@ var KNWebGLBuildSparkleEffect = Class.create({
         // need to use the program before drawing the particle system
         gl.useProgram(this.program["sparkle"].shaderProgram);
 
-        //this.sparkleSystem.setMVPMatrix(this.baseTransform);
+        this.sparkleSystem.setMVPMatrix(this.baseTransform);
         this.sparkleSystem.drawFrame(percent, 1.0);
+    }
+});
+
+var KNWebGLTransitionMagicMove = Class.create(KNWebGLProgram, {
+    initialize: function($super, renderer, params) {
+        // initialize default program data for core animation wrapper program
+        this.coreAnimationWrapperProgram = new KNWebGLCoreAnimationWrapperProgram(params);
+
+        // create WebGL program using core animation wrapper program data
+        $super(renderer, this.coreAnimationWrapperProgram.data);
+
+        var gl = this.gl;
+
+        this.percentfinished = 0.0;
+
+        // create drawable object for drawing the texture
+        this.drawableObjects = [];
+
+        this.slideOrigin = {"x": 0, "y": 0};
+        this.slideSize = {"width": gl.viewportWidth, "height": gl.viewportHeight};
+        this.slideRect = {
+            "origin": this.slideOrigin,
+            "size": this.slideSize
+        };
+
+        this.frameRect = this.slideRect;
+
+        var effect = params.effect;
+
+        // set parent opacity from CA baseLayer
+        this.parentOpacity = effect.baseLayer.initialState.opacity;
+
+        // setup web drawable requirements
+        this.animationWillBeginWithContext();
+    },
+
+    animationWillBeginWithContext: function() {
+        var renderer = this.renderer;
+
+        // initialize a core animation wrapper based effect object for each texture rectangle
+        this.coreAnimationWrapperBasedEffects = [];
+
+        var program = this.program;
+        var slideRect = this.slideRect;
+        var duration = this.duration;
+        var direction = this.direction;
+        var buildType = this.type;
+        var parentOpacity = this.parentOpacity;
+        var parameterGroupName = this.parameterGroupName;
+
+        for (var i = 0, length = this.textures.length; i < length; i++) {
+            var texture = this.textures[i];
+            var direction = this.direction;
+            var tr = this.textures[i].textureRect;
+            var frameRect = this.frameRect;
+
+            var orthoOffset = {
+                "x": texture.offset.pointX - frameRect.origin.x,
+                "y": texture.offset.pointY + texture.height - (frameRect.origin.y + frameRect.size.height)
+            };
+
+            var baseOrthoTransform = WebGraphics.makeOrthoMatrix4(0, frameRect.size.width, 0, frameRect.size.height, -1, 1);
+            var baseTransform = WebGraphics.translateMatrix4(baseOrthoTransform, orthoOffset.x, -orthoOffset.y, 0);
+
+            var coreAnimationWrapperBasedEffect = new KNWebGLCoreAnimationWrapperBasedEffect(
+                renderer,
+                program,
+                slideRect,
+                texture,
+                frameRect,
+                baseTransform,
+                duration,
+                direction,
+                buildType,
+                parentOpacity
+            );
+
+            // push each effect into effect dictionary
+            this.coreAnimationWrapperBasedEffects.push(coreAnimationWrapperBasedEffect);
+        }
+    },
+
+    drawFrame: function(difference, elapsed, duration) {
+        var coreAnimationWrapperBasedEffects = this.coreAnimationWrapperBasedEffects;
+
+        for (var i = 0, length = coreAnimationWrapperBasedEffects.length; i < length; i++) {
+            coreAnimationWrapperBasedEffects[i].drawFrame(difference, elapsed, duration);
+        }
+    }
+});
+
+var KNWebGLTransitionContentAware = Class.create(KNWebGLProgram, {
+    initialize: function($super, renderer, params) {
+        // initialize default program data for core animation wrapper program
+        this.coreAnimationWrapperProgram = new KNWebGLCoreAnimationWrapperProgram(params);
+
+        this.params = params;
+
+        // create WebGL program using core animation wrapper program data
+        $super(renderer, this.coreAnimationWrapperProgram.data);
+
+        var gl = this.gl;
+
+        this.percentfinished = 0.0;
+
+        this.slideOrigin = {"x": 0, "y": 0};
+        this.slideSize = {"width": gl.viewportWidth, "height": gl.viewportHeight};
+        this.slideRect = {
+            "origin": this.slideOrigin,
+            "size": this.slideSize
+        };
+
+        // set frameRect to slideRect for content aware transition
+        this.frameRect = this.slideRect;
+
+        var effect = params.effect;
+
+        // set parent opacity from CA baseLayer
+        this.parentOpacity = effect.baseLayer.initialState.opacity;
+
+        // setup web drawable requirements
+        this.animationWillBeginWithContext();
+    },
+
+    animationWillBeginWithContext: function() {
+        var renderer = this.renderer;
+
+        // effect array object to include both text effects and CA wrapper based objects
+        this.contentAwareEffects = [];
+
+        var program = this.program;
+        var slideRect = this.slideRect;
+        var duration = this.duration;
+        var direction = this.direction;
+        var buildType = this.type;
+        var parentOpacity = this.parentOpacity;
+        var parameterGroupName = this.parameterGroupName;
+
+        for (var i = 0, length = this.textures.length; i < length; i++) {
+            var texture = this.textures[i];
+            var direction = this.direction;
+            var tr = this.textures[i].textureRect;
+            var frameRect = this.frameRect;
+
+            var orthoOffset = {
+                "x": texture.offset.pointX - frameRect.origin.x,
+                "y": texture.offset.pointY + texture.height - (frameRect.origin.y + frameRect.size.height)
+            };
+
+            var baseOrthoTransform = WebGraphics.makeOrthoMatrix4(0, frameRect.size.width, 0, frameRect.size.height, -1, 1);
+            var baseTransform = WebGraphics.translateMatrix4(baseOrthoTransform, orthoOffset.x, -orthoOffset.y, 0);
+
+            // make sure the effect only work on text type or shape object
+            var texturedRectangle = texture.texturedRectangle;
+            var textureType = texturedRectangle.textureType;
+            var isShapeObject = (textureType === TSDTextureType.Object && texturedRectangle.shapePath) ? true : false;
+
+            if (textureType === TSDTextureType.Text || isShapeObject) {
+                var params = this.params;
+                var effect = params.effect;
+
+                // set this texture for text effect
+                params.textures = [texture];
+
+                // use hidden animations to find out the correct build type
+                var groupAnimations = texture.animations;
+                var program;
+
+                if (groupAnimations && groupAnimations.length > 0) {
+                    var animations = groupAnimations[0].animations;
+
+                    for (var j = 0, animationLength = animations.length; j < animationLength; j++) {
+                        var animation = animations[j];
+
+                        if (animation.property === "hidden") {
+                            effect.type = animation.to.scalar ? "buildOut" : "buildIn";
+                            break;
+                        }
+                    }
+                }
+
+                switch (effect.name) {
+                    case "apple:ca-text-shimmer":
+                        program = new KNWebGLBuildShimmer(renderer, params);
+                        break;
+
+                    case "apple:ca-text-sparkle":
+                        program = new KNWebGLBuildSparkle(renderer, params);
+                        break;
+
+                    default:
+                        program = new KNWebGLDissolve(renderer, params);
+                        break;
+                }
+
+                // push each text effect into effect dictionary
+                this.contentAwareEffects.push(program);
+            } else {
+                var coreAnimationWrapperBasedEffect = new KNWebGLCoreAnimationWrapperBasedEffect(
+                    renderer,
+                    program,
+                    slideRect,
+                    texture,
+                    frameRect,
+                    baseTransform,
+                    duration,
+                    direction,
+                    buildType,
+                    parentOpacity
+                );
+
+                // push each CA effect into effect dictionary
+                this.contentAwareEffects.push(coreAnimationWrapperBasedEffect);
+            }
+        }
+    },
+
+    drawFrame: function(difference, elapsed, duration) {
+        var contentAwareEffects = this.contentAwareEffects;
+
+        for (var i = 0, length = contentAwareEffects.length; i < length; i++) {
+            var contentAwareEffect = contentAwareEffects[i];
+            contentAwareEffect.drawFrame(difference, elapsed, duration);
+        }
+    }
+});
+
+var KNWebGLTransitionShimmer = Class.create(KNWebGLTransitionContentAware, {
+    initialize: function($super, renderer, params) {
+        // Set up Shimmer as content aware transition
+        $super(renderer, params);
+    }
+});
+
+var KNWebGLTransitionSparkle = Class.create(KNWebGLTransitionContentAware, {
+    initialize: function($super, renderer, params) {
+        // Set up Sparkle as content aware transition
+        $super(renderer, params);
     }
 });

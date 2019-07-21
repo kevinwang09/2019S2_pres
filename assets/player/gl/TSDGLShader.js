@@ -3,7 +3,7 @@
  * Keynote HTML Player
  *
  * Created by Tungwei Cheng
- * Copyright (c) 2018 Apple Inc. All rights reserved.
+ * Copyright (c) 2018-2019 Apple Inc. All rights reserved.
  */
 
 // Uniforms
@@ -127,6 +127,10 @@ var TSDGLShader = Class.create({
 
     initWithContentsShader: function() {
         this.initWithShaderFileNames("contents", "contents");
+    },
+
+    initWithContentsAndOpacityShader: function() {
+        this.initWithShaderFileNames("contentsAndOpacity", "contentsAndOpacity");
     },
 
     initWithShaderFileNames: function(vertexShaderFileName, fragmentShaderFileName) {

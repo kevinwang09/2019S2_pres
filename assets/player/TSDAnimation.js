@@ -3,7 +3,7 @@
  * Keynote HTML Player
  *
  * Created by Tungwei Cheng
- * Copyright (c) 2016 Apple Inc. All rights reserved.
+ * Copyright (c) 2016-2019 Apple Inc. All rights reserved.
  */
 
 // Stuff from TSDAnimation.h
@@ -90,3 +90,37 @@ function KNEffectIsEmphasisEffect(effect) {
 }
 
 // end of TSDAnimation.m
+
+//stuff from TSDTexturedRectangle.h
+var TSDTextureType = {
+    // Uninitialized
+    Unknown: 0,
+    // Slide Background
+    Background: 1,
+    // An object's shadow
+    Shadow: 2,
+    // An object's contact shadow, if it has one
+    ContactShadow: 3,
+    // A shadow for all the texture chunks
+    GroupedShadow: 4,
+    // The actual object
+    Object: 5,
+    // Any text on top of the object
+    Text: 6,
+    // A stroke or frame's parameterized texture
+    StrokeParameterized: 7,
+    // A stroke or frame
+    Stroke: 8,
+    // A stroke's line end for the head
+    StrokeLineEndForHead: 9,
+    // A stroke's line end for the tail
+    StrokeLineEndForTail: 10,
+    // An object's reflection
+    Reflection: 11,
+    // Mask for frame (stroke)
+    FrameMask: 12,
+    // Mask for reflection
+    ReflectionMask: 13
+};
+
+// end of TSDTexturedRectangle.h

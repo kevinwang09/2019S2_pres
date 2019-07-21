@@ -3,7 +3,7 @@
  * Keynote HTML Player
  *
  * Created by Tungwei Cheng
- * Copyright (c) 2018 Apple Inc. All rights reserved.
+ * Copyright (c) 2018-2019 Apple Inc. All rights reserved.
  */
 
 var KNAnimParameterGroup = Class.create({
@@ -149,5 +149,16 @@ var ParameterGroup = {
         "ParticleLifeSpanMinDuration": 0.5,
         "FireworkSpeedMin": 0.8,
         "FireworksCount": 2
+    },
+    "timingFunction": {
+        "EaseIn": {
+            "controlPoints": [{"x": 0.42, "y": 0}, {"x": 1, "y": 1}]
+        },
+        "EaseOut": {
+            "controlPoints": [{"x": 0, "y": 0}, {"x": 0.58, "y": 1}]
+        },
+        "EaseInEaseOut": {
+            "controlPoints": [{"x": 0.42, "y": 0}, {"x": 0.58, "y": 1}]
+        }
     }
 };

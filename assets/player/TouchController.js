@@ -208,16 +208,17 @@ var TouchController = Class.create({
                     debugMessage(kDebugTouchController_HandleTouchEndEvent, "-  it's a " + this.swipeFingerCount + " finger tap");
 
                     if (this.tapEventCallback) {
-                        var event = {};
+                        var tapEvent = {};
 
-                        event.memo = {};
-                        event.memo.fingers = this.swipeFingerCount;
-                        event.memo.pointX = endTouch.clientX;
-                        event.memo.pointY = endTouch.clientY;
+                        tapEvent.memo = {};
+                        tapEvent.memo.fingers = this.swipeFingerCount;
+                        tapEvent.memo.pointX = endTouch.clientX;
+                        tapEvent.memo.pointY = endTouch.clientY;
+                        tapEvent.memo.target = event.target;
 
                         debugMessage(kDebugTouchController_HandleTouchEndEvent, "- invoking callback with pointX: " + endTouch.clientX + " pointY: " + endTouch.clientY + "...");
 
-                        this.tapEventCallback(event);
+                        this.tapEventCallback(tapEvent);
 
                         debugMessage(kDebugTouchController_HandleTouchEndEvent, "- back from callback");
                     } else {
@@ -240,7 +241,8 @@ var TouchController = Class.create({
                     debugMessage(kDebugTouchController_HandleTouchEndEvent, "-  it's a " + this.swipeFingerCount + " finger swipe in the " + direction + " direction");
                     document.fire(kSwipeEvent, {
                         direction: direction,
-                        fingers: this.swipeFingerCount
+                        fingers: this.swipeFingerCount,
+                        swipeStartX: this.swipeStartX
                     });
                 }
 

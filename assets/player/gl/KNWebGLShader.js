@@ -3,7 +3,7 @@
  * Keynote HTML Player
  *
  * Created by Tungwei Cheng
- * Copyright (c) 2016-2018 Apple Inc. All rights reserved.
+ * Copyright (c) 2016-2019 Apple Inc. All rights reserved.
  */
 
 var KNWebGLShader = {};
@@ -66,6 +66,42 @@ KNWebGLShader.defaultTextureAndOpacity = {
         {\n\
             vec4 texColor = texture2D(Texture, v_TexCoord);\n\
             gl_FragColor = vec4(Opacity) * texColor;\n\
+        }\
+        "
+};
+
+KNWebGLShader.contentsAndOpacity = {
+    attribNames: ["Position", "TexCoord"],
+    uniformNames: ["MVPMatrix", "Texture", "Texture2", "mixFactor", "Opacity"],
+    vertex: "\
+        #ifdef GL_ES\n\
+        precision highp float;\n\
+        #endif\n\
+        uniform mat4 MVPMatrix;\n\
+        attribute vec4 Position;\n\
+        attribute vec2 TexCoord;\n\
+        varying vec2 v_TexCoord;\n\
+        void main()\n\
+        {\n\
+            v_TexCoord = TexCoord;\n\
+            gl_Position = (MVPMatrix * Position);\n\
+        }\
+        ",
+    fragment: "\
+        #ifdef GL_ES\n\
+        precision mediump float;\n\
+        #endif\n\
+        uniform sampler2D Texture;\n\
+        uniform sampler2D Texture2;\n\
+        uniform float mixFactor;\n\
+        uniform float Opacity;\n\
+        varying vec2 v_TexCoord;\n\
+        void main()\n\
+        {\n\
+            vec4 outgoingColor = texture2D(Texture2, v_TexCoord);\n\
+            vec4 incomingColor = texture2D(Texture, v_TexCoord);\n\
+            vec4 result = mix(outgoingColor, incomingColor, mixFactor);\n\
+	        gl_FragColor = vec4(Opacity) * result;\n\
         }\
         "
 };

@@ -139,9 +139,6 @@ var ShowController = Class.create({
 
         // disable mouse right click context menu
         document.observe("contextmenu", this.handleContextMenuEvent.bind(this));
-
-        Event.observe(this.displayManager.previousButton, "click", this.goBackToPreviousSlide.bind(this, "tapPreviousButton"));
-        Event.observe(this.displayManager.nextButton, "click", this.advanceToNextBuild.bind(this, "tapNextButton"));
     },
 
     startShow: function() {
@@ -415,7 +412,32 @@ var ShowController = Class.create({
             pointY: event.memo.pointY
         };
 
-        this.processClickOrTapAtDisplayCoOrds(displayCoOrds);
+        var target = event.memo.target;
+        var slideNumber;
+
+        if (target) {
+            slideNumber = this.slideNumberFromTarget(target);
+        }
+
+        if (slideNumber) {
+            this.navigatorController.select(slideNumber);
+        } else {
+            this.processClickOrTapAtDisplayCoOrds(displayCoOrds);
+        }
+    },
+
+    slideNumberFromTarget: function(target) {
+        // return null if there is no target
+        if (!target) {
+            return null;
+        }
+
+        // search up to the node below body node
+        while (target.slideNumber == null && target.nodeName.toLowerCase() !== "body") {
+            target = target.parentNode;
+        }
+
+        return target.slideNumber;
     },
 
     processClickOrTapAtDisplayCoOrds: function(displayCoOrds) {
@@ -449,6 +471,20 @@ var ShowController = Class.create({
     },
 
     handleSwipeEvent: function(event) {
+        var memo = event.memo;
+
+        // Toggle the slide navigator if swipe event is in navigator area.
+        // The thumbnail scroller is 129px. For now we use 150px but can be adjusted later if needed.
+        if (memo.swipeStartX && memo.swipeStartX < 150) {
+            if (memo.direction === "right") {
+                this.navigatorController.thumbnailSidebar.show(this.navigatorController.leftSidebar);
+            } else if (memo.direction === "left") {
+                this.navigatorController.thumbnailSidebar.hide(this.navigatorController.leftSidebar);
+            }
+
+            return;
+        }
+
         if (event.memo.direction === "left") {
             switch (event.memo.fingers) {
             case 1:
@@ -1282,7 +1318,6 @@ var ShowController = Class.create({
 
     handleSceneDidLoad: function(sceneToLoadInfo) {
         clearTimeout(this.waitForSceneToLoadTimeout);
-        this.displayManager.setNextButtonEnabled(this.currentSceneIndex < (this.script.pageCount - 1));
 
         switch (this.state) {
         case kShowControllerState_WaitingToJump:
@@ -1492,7 +1527,6 @@ var ShowController = Class.create({
             this.previousSlideIndex = this.currentSlideIndex;
             this.currentSlideIndex = newSlideIndex;
 
-            this.displayManager.updateSlideNumber(this.currentSlideIndex + 1, this.script.slideCount);
             this.delegate.propertyChanged(kPropertyName_currentSlide, this.currentSlideIndex + 1);
 
             // fire SlideIndexDidChangeEvent
@@ -1552,9 +1586,6 @@ var ShowController = Class.create({
                 enableForwardButton = false;
             }
         }
-
-        this.displayManager.setPreviousButtonEnabled(enableBackwardButton);
-        this.displayManager.setNextButtonEnabled(enableForwardButton);
     },
 
     playCurrentScene: function(hyperlinkEventInfo) {
@@ -1741,10 +1772,6 @@ var ShowController = Class.create({
     },
 
     startSoundTrack: function() {
-        if (gMode === kModeMobile) {
-            return;
-        }
-
         if (this.script.soundtrack == null) {
             return;
         }
@@ -2057,37 +2084,6 @@ var ShowController = Class.create({
             var spaceOnRight = showWidth - (hyperlinkRect.x + hyperlinkRect.width);
             var spaceOnBottom = showHeight - (hyperlinkRect.y + hyperlinkRect.top);
 
-            if (gMode === kModeMobile) {
-                if (hyperlinkRect.width < kMinHyperlinkWidth) {
-                    var deltaWidth = kMinHyperlinkWidth - hyperlinkRect.width;
-                    var leftShift = deltaWidth / 2;
-                    var rightShift = deltaWidth / 2;
-
-                    if (spaceOnLeft < leftShift) {
-                        leftShift = spaceOnLeft;
-                    } else if (spaceOnRight < rightShift) {
-                        leftShift = leftShift + (rightShift - spaceOnRight);
-                    }
-
-                    activeHyperlink.targetRectangle.x -= leftShift;
-                    activeHyperlink.targetRectangle.width += deltaWidth;
-                }
-
-                if (hyperlinkRect.height < kMinHyperlinkHeight) {
-                    var deltaHeight = kMinHyperlinkHeight - hyperlinkRect.height;
-                    var topShift = deltaHeight / 2;
-                    var bottomShift = deltaHeight / 2;
-
-                    if (spaceOnTop < topShift) {
-                        topShift = spaceOnTop;
-                    } else if (spaceOnBottom < bottomShift) {
-                        topShift = topShift + (rightShift - spaceOnRight);
-                    }
-
-                    activeHyperlink.targetRectangle.y -= topShift;
-                    activeHyperlink.targetRectangle.height += deltaHeight;
-                }
-            }
             this.stageManager.addHyperlink(activeHyperlink.targetRectangle);
             this.activeHyperlinks[iHyperlink] = activeHyperlink;
         }
