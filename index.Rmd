@@ -1,0 +1,28 @@
+---
+title: "2019 Semester 2 Update"
+author: "Kevin Wang"
+date: "25/07/2019"
+output: html_document
+---
+
+# 1st Update: Single Cell Plus and EcoSta
+
+Keynote slides are [here](2019S2_progress_scp/index.html)
+
+
+# 2nd Update: CPOP
+
+PDF slides are [here](2019S2_progress_cpop.pdf)
+
+
+# Multi-language support of Markdown 
+
+
+
+此生多寒凉
+
+此身越重洋
+
+轻描时光漫长
+
+低唱语焉不详
