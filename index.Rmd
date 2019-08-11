@@ -12,17 +12,7 @@ Keynote slides are [here](2019S2_progress_scp/index.html)
 
 # 2nd Update: CPOP
 
-PDF slides are [here](2019S2_progress_cpop.pdf)
+PDF slides are [here](CPOP_pres.pdf)
 
 
 # Multi-language support of Markdown 
-
-
-
-此生多寒凉
-
-此身越重洋
-
-轻描时光漫长
-
-低唱语焉不详
