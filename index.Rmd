@@ -7,12 +7,21 @@ output: html_document
 
 # 1st Update: Single Cell Plus and EcoSta
 
-Keynote slides are [here](2019S2_progress_scp.pdf)
+Slides are [here](2019S2_progress_scp.pdf)
 
 
-# 2nd Update: CPOP
+# 2nd Update: Stress testing Google Cloud, part 2
 
-PDF slides are [here](CPOP_pres.pdf)
+Slides are [here](2019S2_progress_scp_part2/index.html)
 
 
-# Multi-language support of Markdown 
+
+# Do you know that Markdown supports non-English language?
+
+此生多勉强
+
+此身越重洋
+
+轻描时光漫长
+
+低唱语焉不详
