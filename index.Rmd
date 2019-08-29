@@ -12,7 +12,7 @@ Slides are [here](2019S2_progress_scp.pdf)
 
 # 2nd Update: Stress testing Google Cloud, part 2
 
-Slides are [here](2019S2_progress_scp_part2/index.html)
+Slides are [here](2019S2_progress_scp_part2.pdf)
 
 
 
