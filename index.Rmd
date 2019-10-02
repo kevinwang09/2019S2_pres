@@ -18,6 +18,12 @@ Slides are [here](2019S2_progress_scp_part2.pdf)
 
 Slides are [here](2019S2_progress_scp_part3.pdf)
 
+
+# SUMS talk
+
+Slides are [here](CPOP_SUMS.pdf)
+
+
 # Did you know that Markdown supports non-English language?
 
 <center>
