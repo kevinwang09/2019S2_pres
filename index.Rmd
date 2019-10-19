@@ -19,22 +19,6 @@ Slides are [here](2019S2_progress_scp_part2.pdf)
 Slides are [here](2019S2_progress_scp_part3.pdf)
 
 
-# SUMS talk
+# Internal talk
 
-Slides are [here](CPOP_SUMS.pdf)
-
-
-# Did you know that Markdown supports non-English language?
-
-<center>
-我心深似海 你宛如明月
-
-这般美如画 却遥不可及
-
-为何要可及 彼此共天地
-
-海上升明月 已尽收眼底
-
-这美丽的世界 已经拥有你
-
-我已经拥有 这美丽世界
+Slides are [here](CPOP_full_talk.pdf)
