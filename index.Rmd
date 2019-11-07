@@ -27,3 +27,8 @@ Slides are [here](CPOP_full_talk.pdf)
 # CPC workshop alpha testing
 
 Slides are [here](CPC_workshop.pdf)
+
+
+# Practice talk (Ellis threw me under the bus 10 mins ago)
+
+Slides are [here](CPOP_formal.pdf)
